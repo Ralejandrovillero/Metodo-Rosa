@@ -1,0 +1,220 @@
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageTk  # Importar PIL para manejar imágenes
+
+# Función para calcular las puntuaciones de la silla, pantalla y periféricos, y teclado y mouse
+
+def calcular_puntuaciones():
+    try:
+        # Obtener valores ingresados por el usuario para la silla
+        puntuacion_altura_asiento = int(entry_altura_asiento.get())
+        puntuacion_profundidad_asiento = int(entry_profundidad_asiento.get())
+        puntuacion_reposabrazos = int(entry_reposabrazos.get())
+        puntuacion_respaldo = int(entry_respaldo.get())
+
+        # Verificar que las puntuaciones de la silla estén en el rango adecuado (1-5)
+        if not (1 <= puntuacion_altura_asiento <= 5) or not (1 <= puntuacion_profundidad_asiento <= 5) or not (1 <= puntuacion_reposabrazos <= 5) or not (1 <= puntuacion_respaldo <= 5):
+            messagebox.showerror("Error", "Las puntuaciones de la silla deben estar en el rango de 1 a 5.")
+            return
+
+        # Calcular la suma de las puntuaciones de la altura y profundidad del asiento
+        suma_asiento = puntuacion_altura_asiento + puntuacion_profundidad_asiento
+        suma_reposabrazos_respaldo = puntuacion_reposabrazos + puntuacion_respaldo
+        puntuacion_silla = evaluar_tabla_a(suma_asiento, suma_reposabrazos_respaldo)
+
+        # Obtener valores ingresados por el usuario para la pantalla y el teléfono
+        puntuacion_pantalla = int(entry_pantalla.get())
+        puntuacion_telefono = int(entry_telefono.get())
+
+        # Verificar que las puntuaciones de la pantalla y el teléfono estén en el rango adecuado
+        if not (0 <= puntuacion_pantalla <= 7) or not (0 <= puntuacion_telefono <= 6):
+            messagebox.showerror("Error", "Las puntuaciones de la pantalla deben estar en el rango de la pantalla (0-7) y del teléfono (0-6).")
+            return
+
+        # Evaluar la tabla B para obtener la puntuación de la pantalla y periféricos
+        puntuacion_pantalla_perifericos_b = evaluar_tabla_b(puntuacion_telefono, puntuacion_pantalla)
+
+        # Obtener valores ingresados por el usuario para el teclado y el mouse
+        puntuacion_teclado = int(entry_teclado.get())
+        puntuacion_mouse = int(entry_mouse.get())
+
+        # Verificar que las puntuaciones del teclado y el mouse estén en el rango adecuado
+        if not (0 <= puntuacion_teclado <= 7) or not (0 <= puntuacion_mouse <= 7):
+            messagebox.showerror("Error", "Las puntuaciones del teclado deben estar en el rango de 0-7 y del mouse de 0-7.")
+            return
+
+        # Evaluar la tabla C para obtener la puntuación del teclado y mouse
+        puntuacion_teclado_mouse = evaluar_tabla_c(puntuacion_mouse, puntuacion_teclado)
+
+        # Evaluar la tabla D para obtener la puntuación final de la pantalla y periféricos
+        puntuacion_pantalla_perifericos = evaluar_tabla_d(puntuacion_pantalla_perifericos_b, puntuacion_teclado_mouse)
+
+        # Evaluar la tabla E para obtener la puntuación ROSA final
+        puntuacion_rosa = evaluar_tabla_e(puntuacion_silla, puntuacion_pantalla_perifericos)
+
+        # Determinar el nivel de actuación según la puntuación ROSA
+        if puntuacion_rosa is not None:
+            nivel_actuacion, riesgo, actuacion, color = evaluar_nivel_actuacion(puntuacion_rosa)
+            # Mostrar el resultado con el nivel de actuación
+            messagebox.showinfo("Resultado", f"El resultado ROSA es: {puntuacion_rosa}\nNivel: {nivel_actuacion} ({riesgo})\nActuación: {actuacion}", icon='info')
+        else:
+            messagebox.showerror("Error", "No se encontró una puntuación válida para los valores ingresados.")
+
+    except ValueError:
+        messagebox.showerror("Error", "Por favor, ingrese valores numéricos válidos para las puntuaciones.")
+
+# Función para evaluar el nivel de actuación según la puntuación final ROSA
+def evaluar_nivel_actuacion(puntuacion_rosa):
+    if puntuacion_rosa == 1:
+        return 0, "Inapreciable", "No es necesaria actuación.", "#d4edda"
+    elif 2 <= puntuacion_rosa <= 4:
+        return 1, "Mejorable", "Pueden mejorarse algunos elementos del puesto.", "#ffeeba"
+    elif puntuacion_rosa == 5:
+        return 2, "Alto", "Es necesaria la actuación.", "#fff3cd"
+    elif 6 <= puntuacion_rosa <= 8:
+        return 3, "Muy Alto", "Es necesaria la actuación cuanto antes.", "#f8d7da"
+    elif 9 <= puntuacion_rosa <= 10:
+        return 4, "Extremo", "Es necesaria la actuación urgentemente.", "#f5c6cb"
+    else:
+        return 0, "Inapreciable", "No es necesaria actuación.", "#d4edda"
+
+# Funciones para evaluar tablas A, B, C, D y E
+def evaluar_tabla_a(suma_asiento, suma_reposabrazos_respaldo):
+    tabla_a = {
+        (2, 2): 2, (2, 3): 2, (2, 4): 3, (2, 5): 4, (2, 6): 5, (2, 7): 6, (2, 8): 7, (2, 9): 8,
+        (3, 2): 2, (3, 3): 2, (3, 4): 3, (3, 5): 4, (3, 6): 5, (3, 7): 6, (3, 8): 7, (3, 9): 8,
+        (4, 2): 3, (4, 3): 3, (4, 4): 3, (4, 5): 4, (4, 6): 5, (4, 7): 6, (4, 8): 7, (4, 9): 8,
+        (5, 2): 4, (5, 3): 4, (5, 4): 4, (5, 5): 5, (5, 6): 5, (5, 7): 6, (5, 8): 7, (5, 9): 8,
+        (6, 2): 5, (6, 3): 5, (6, 4): 5, (6, 5): 5, (6, 6): 6, (6, 7): 7, (6, 8): 8, (6, 9): 8,
+        (7, 2): 6, (7, 3): 6, (7, 4): 6, (7, 5): 6, (7, 6): 7, (7, 7): 7, (7, 8): 8, (7, 9): 9,
+        (8, 2): 7, (8, 3): 7, (8, 4): 7, (8, 5): 7, (8, 6): 8, (8, 7): 8, (8, 8): 8, (8, 9): 9,
+    }
+    return tabla_a.get((suma_asiento, suma_reposabrazos_respaldo), 0)
+
+def evaluar_tabla_b(puntuacion_telefono, puntuacion_pantalla):
+    tabla_b = {
+        (0, 0): 1, (1, 0): 1, (2, 0): 1, (3, 0): 2, (4, 0): 3, (5, 0): 4, (6, 0): 5,
+        (0, 1): 1, (1, 1): 1, (2, 1): 2, (3, 1): 3, (4, 1): 4, (5, 1): 5, (6, 1): 6,
+        (0, 2): 1, (1, 2): 2, (2, 2): 2, (3, 2): 3, (4, 2): 4, (5, 2): 5, (6, 2): 6,
+        (0, 3): 2, (1, 3): 3, (2, 3): 3, (3, 3): 4, (4, 3): 5, (5, 3): 6, (6, 3): 7,
+        (0, 4): 3, (1, 4): 4, (2, 4): 4, (3, 4): 5, (4, 4): 6, (5, 4): 7, (6, 4): 8,
+        (0, 5): 4, (1, 5): 5, (2, 5): 5, (3, 5): 6, (4, 5): 7, (5, 5): 8, (6, 5): 9,
+        (0, 6): 5, (1, 6): 6, (2, 6): 6, (3, 6): 7, (4, 6): 8, (5, 6): 9, (6, 6): 9
+    }
+    return tabla_b.get((puntuacion_telefono, puntuacion_pantalla), 0)
+
+def evaluar_tabla_c(puntuacion_mouse, puntuacion_teclado):
+    tabla_c = {
+        (0, 0): 1, (1, 0): 1, (2, 0): 1, (3, 0): 2, (4, 0): 3, (5, 0): 4, (6, 0): 5,
+        (0, 1): 1, (1, 1): 1, (2, 1): 2, (3, 1): 3, (4, 1): 4, (5, 1): 5, (6, 1): 6,
+        (0, 2): 1, (1, 2): 2, (2, 2): 2, (3, 2): 3, (4, 2): 4, (5, 2): 5, (6, 2): 6,
+        (0, 3): 2, (1, 3): 3, (2, 3): 3, (3, 3): 4, (4, 3): 5, (5, 3): 6, (6, 3): 7,
+        (0, 4): 3, (1, 4): 4, (2, 4): 4, (3, 4): 5, (4, 4): 6, (5, 4): 7, (6, 4): 8,
+        (0, 5): 4, (1, 5): 5, (2, 5): 5, (3, 5): 6, (4, 5): 7, (5, 5): 8, (6, 5): 9,
+        (0, 6): 5, (1, 6): 6, (2, 6): 6, (3, 6): 7, (4, 6): 8, (5, 6): 9, (6, 6): 9,
+        (0, 7): 6, (1, 7): 7, (2, 7): 7, (3, 7): 8, (4, 7): 9, (5, 7): 9, (6, 7): 9
+    }
+    return tabla_c.get((puntuacion_mouse, puntuacion_teclado), 0)
+
+def evaluar_tabla_d(puntuacion_pantalla_perifericos_b, puntuacion_teclado_mouse):
+    tabla_d = {
+        (1, 1): 1, (2, 1): 2, (3, 1): 3, (4, 1): 4, (5, 1): 5, (6, 1): 6, (7, 1): 7, (8, 1): 8, (9, 1): 9,
+        (1, 2): 1, (2, 2): 2, (3, 2): 3, (4, 2): 4, (5, 2): 5, (6, 2): 6, (7, 2): 7, (8, 2): 8, (9, 2): 9,
+        (1, 3): 2, (2, 3): 3, (3, 3): 4, (4, 3): 5, (5, 3): 6, (6, 3): 7, (7, 3): 8, (8, 3): 9, (9, 3): 9,
+        (1, 4): 3, (2, 4): 4, (3, 4): 5, (4, 4): 6, (5, 4): 7, (6, 4): 8, (7, 4): 9, (8, 4): 9, (9, 4): 9,
+        (1, 5): 4, (2, 5): 5, (3, 5): 6, (4, 5): 7, (5, 5): 8, (6, 5): 9, (7, 5): 9, (8, 5): 9, (9, 5): 9,
+        (1, 6): 5, (2, 6): 6, (3, 6): 7, (4, 6): 8, (5, 6): 9, (6, 6): 9, (7, 6): 9, (8, 6): 9, (9, 6): 9
+    }
+    return tabla_d.get((puntuacion_pantalla_perifericos_b, puntuacion_teclado_mouse), 0)
+
+def evaluar_tabla_e(puntuacion_silla, puntuacion_pantalla_perifericos):
+    tabla_e = {
+        (1, 1): 1, (1, 2): 2, (1, 3): 3, (1, 4): 4, (1, 5): 5, (1, 6): 6, (1, 7): 7, (1, 8): 8, (1, 9): 9, (1, 10): 10,
+        (2, 1): 2, (2, 2): 2, (2, 3): 3, (2, 4): 4, (2, 5): 5, (2, 6): 6, (2, 7): 7, (2, 8): 8, (2, 9): 9, (2, 10): 10,
+        (3, 1): 3, (3, 2): 3, (3, 3): 3, (3, 4): 4, (3, 5): 5, (3, 6): 6, (3, 7): 7, (3, 8): 8, (3, 9): 9, (3, 10): 10,
+        (4, 1): 4, (4, 2): 4, (4, 3): 4, (4, 4): 4, (4, 5): 5, (4, 6): 6, (4, 7): 7, (4, 8): 8, (4, 9): 9, (4, 10): 10,
+        (5, 1): 5, (5, 2): 5, (5, 3): 5, (5, 4): 5, (5, 5): 5, (5, 6): 6, (5, 7): 7, (5, 8): 8, (5, 9): 9, (5, 10): 10,
+        (6, 1): 6, (6, 2): 6, (6, 3): 6, (6, 4): 6, (6, 5): 6, (6, 6): 6, (6, 7): 7, (6, 8): 8, (6, 9): 9, (6, 10): 10,
+        (7, 1): 7, (7, 2): 7, (7, 3): 7, (7, 4): 7, (7, 5): 7, (7, 6): 7, (7, 7): 7, (7, 8): 8, (7, 9): 9, (7, 10): 10,
+        (8, 1): 8, (8, 2): 8, (8, 3): 8, (8, 4): 8, (8, 5): 8, (8, 6): 8, (8, 7): 8, (8, 8): 8, (8, 9): 9, (8, 10): 10,
+        (9, 1): 9, (9, 2): 9, (9, 3): 9, (9, 4): 9, (9, 5): 9, (9, 6): 9, (9, 7): 9, (9, 8): 9, (9, 9): 9, (9, 10): 10,
+        (10, 1): 10, (10, 2): 10, (10, 3): 10, (10, 4): 10, (10, 5): 10, (10, 6): 10, (10, 7): 10, (10, 8): 10, (10, 9): 10, (10, 10): 10,
+    }
+    return tabla_e.get((puntuacion_silla, puntuacion_pantalla_perifericos), 0)
+
+# Crear la ventana principal
+ventana = tk.Tk()
+ventana.title("Evaluación Ergonomía - Método ROSA")
+ventana.geometry("430x650")
+ventana.configure(bg="#F5F5F5")
+
+# Estilo institucional
+font_title = ("Arial", 18, "bold")
+font_label = ("Arial", 12)
+font_entry = ("Arial", 12)
+font_button = ("Arial", 14, "bold")
+
+# Título
+label_title = tk.Label(ventana, text="Evaluación Ergonomía - ROSA", font=font_title, bg="#F5F5F5", fg="#333333")
+label_title.pack(pady=20)
+
+# Crear un frame para las entradas de la silla
+frame_silla = tk.Frame(ventana, bg="#F5F5F5")
+frame_silla.pack(pady=10)
+
+# Crear etiquetas y campos de entrada para las puntuaciones de la silla
+labels = ["Altura Asiento (1-5):", "Profundidad Asiento (1-5):", "Reposabrazos (1-5):", "Respaldo (1-5):"]
+entries = []
+for i, text in enumerate(labels):
+    label = tk.Label(frame_silla, text=text, font=font_label, bg="#F5F5F5", fg="#333333")
+    label.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+    entry = tk.Entry(frame_silla, font=font_entry, width=5)
+    entry.grid(row=i, column=1, padx=10, pady=5)
+    entries.append(entry)
+
+entry_altura_asiento, entry_profundidad_asiento, entry_reposabrazos, entry_respaldo = entries
+
+# Pantalla y Teléfono
+frame_pantalla_telefono = tk.Frame(ventana, bg="#F5F5F5")
+frame_pantalla_telefono.pack(pady=10)
+labels_pantalla_telefono = ["Pantalla (0-7):", "Teléfono (0-6):"]
+entries_pantalla_telefono = []
+for i, text in enumerate(labels_pantalla_telefono):
+    label = tk.Label(frame_pantalla_telefono, text=text, font=font_label, bg="#F5F5F5", fg="#333333")
+    label.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+    entry = tk.Entry(frame_pantalla_telefono, font=font_entry, width=5)
+    entry.grid(row=i, column=1, padx=10, pady=5)
+    entries_pantalla_telefono.append(entry)
+
+entry_pantalla, entry_telefono = entries_pantalla_telefono
+
+# Teclado y Mouse
+frame_teclado_mouse = tk.Frame(ventana, bg="#F5F5F5")
+frame_teclado_mouse.pack(pady=10)
+labels_teclado_mouse = ["Teclado (0-7):", "Mouse (0-7):"]
+entries_teclado_mouse = []
+for i, text in enumerate(labels_teclado_mouse):
+    label = tk.Label(frame_teclado_mouse, text=text, font=font_label, bg="#F5F5F5", fg="#333333")
+    label.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+    entry = tk.Entry(frame_teclado_mouse, font=font_entry, width=5)
+    entry.grid(row=i, column=1, padx=10, pady=5)
+    entries_teclado_mouse.append(entry)
+
+entry_teclado, entry_mouse = entries_teclado_mouse
+
+# Botón para calcular
+boton_calcular = tk.Button(ventana, text="Calcular", command=calcular_puntuaciones, font=font_button, bg="#4CAF50", fg="white")
+boton_calcular.pack(pady=20)
+
+# Agregar imagen en la parte inferior
+try:
+    imagen = Image.open("PUJ.png")  # Cargar la imagen llamada PUJ.png
+    imagen = imagen.resize((400, 100), Image.LANCZOS)  # Redimensionar la imagen
+    imagen_tk = ImageTk.PhotoImage(imagen)
+    label_imagen = tk.Label(ventana, image=imagen_tk, bg="#F5F5F5")
+    label_imagen.pack(pady=20)
+except Exception as e:
+    print(f"Error al cargar la imagen: {e}")
+
+# Ejecutar la ventana principal
+ventana.mainloop()
